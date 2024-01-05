@@ -1,0 +1,130 @@
+import networkx as nx #librería de grafos
+import matplotlib as mat
+import pandas
+import numpy
+import mplleaflet #visualización sobre mapas
+
+
+lista=pandas.read_excel("Lista_IA.xlsx").to_numpy()
+
+# Creamos un lista con las líneas
+lineas = sorted(lista['linea'].unique())
+# Creamos un diccionario vacío
+estaciones_linea = {}
+
+# Con un bucle cargamos los datos en el diccionario
+for li in lineas:
+    estaciones_linea['linea' + str(li)] = lista['estacion_linea'].values[lista['linea'] == li]
+
+#Comprobamos
+estaciones_linea['linea1']
+
+#Función para colorear los nodos
+def colorear_nodos(G):
+    color   = []
+ 
+    for node in G.nodes:       
+        if node in estaciones_linea['linea1']:
+            color.append('green')
+        elif node in estaciones_linea['linea2']:
+            color.append('red')
+        elif node in estaciones_linea['linea3']:
+            color.append('blue')
+        else:
+            color.append('black')
+            
+    return color
+
+
+    #Función para colorear los vértices
+def colorear_edges(G):
+    color_edge = []
+
+    for edge in G.edges:
+        if edge[1] in estaciones_linea['linea1'] and edge[0] in estaciones_linea['linea1']:
+            color_edge.append('green')
+        elif edge[1] in estaciones_linea['linea2'] and edge[0] in estaciones_linea['linea2']:
+            color_edge.append('red')
+        elif edge[1] in estaciones_linea['linea3'] and edge[0] in estaciones_linea['linea3']:
+            color_edge.append('blue')
+        else:
+            color_edge.append('black')
+            
+    return color_edge    
+
+
+# 1. Creación del grafo
+G = nx.Graph()
+
+# Introducimos origen, destino y tiempo (coste en segundos) de nuestras aristas
+for origen, destino, segundos in zip(lista['origen_linea'], lista['destino_linea'], lista['segundos']):
+    G.add_edge(origen, destino, weight = segundos)
+
+
+# 5. Definimos atributos
+# Color de nodos y aristas
+color      = colorear_nodos(G)
+color_edge = colorear_edges(G)
+
+# Definimos el tamaño de la imagen
+fig, ax = mat.subplots(figsize = (20,10))
+
+# Asignamos atributos al grafo
+nx.draw(G,
+        with_labels = True,      #(Para activar las etiquetas de los nodos)
+        font_size   = 10,
+        node_color  = color,
+        node_size   = 100,
+        edge_color  = color_edge)
+
+# Para visualizar las etiquetas de las aristas
+nx.draw_networkx_edge_labels(G,
+                             edge_labels = edge_labels,
+                             font_size = 17)    
+
+# Vamos a graficar con la librería mplleaflet, para poder observar sobre un mapa nuestro grafo. 
+mplleaflet.display(fig=ax.figure)
+
+# Creamos un diccionario vacío
+ESTACIONES_LINEA = {}
+
+# Con un bucle cargamos los datos en el diccionario
+for li in lineas:
+    ESTACIONES_LINEA['linea' + str(li)] = lista['estacion'].values[lista['linea'] == li]
+
+from IPython.html import widgets
+from IPython.display import display
+
+# Definimos algunas funciones para los widgets
+def print_linea_origen(Estacion_origen):
+    return Estacion_origen
+    
+def select_estacion_origen(Linea_origen):
+    ESTACIONES_ORIGEN.options = ESTACIONES_LINEA[Linea_origen]
+    
+def print_linea_destino(Estacion_destino):
+    return Estacion_destino
+    
+def select_estacion_destino(Linea_destino):
+    ESTACIONES_DESTINO.options = ESTACIONES_LINEA[Linea_destino]
+
+# Lanzamos los widgets
+LINEAS_ORIGEN     = widgets.Select(options = ESTACIONES_LINEA.keys())
+ESTACIONES_ORIGEN = widgets.Select(options = ESTACIONES_LINEA[LINEAS_ORIGEN.value])
+
+LINEAS_DESTINO     = widgets.Select(options = ESTACIONES_LINEA.keys())
+ESTACIONES_DESTINO = widgets.Select(options = ESTACIONES_LINEA[LINEAS_DESTINO.value])
+
+linea_origen  = widgets.interactive(select_estacion_origen, Linea_origen = LINEAS_ORIGEN)
+origen        = widgets.interactive(print_linea_origen, Estacion_origen = ESTACIONES_ORIGEN)
+
+linea_destino = widgets.interactive(select_estacion_destino, Linea_destino = LINEAS_DESTINO)
+destino       = widgets.interactive(print_linea_destino, Estacion_destino = ESTACIONES_DESTINO)
+
+display(linea_origen)
+display(origen)
+
+display(linea_destino)
+display(destino)
+
+
